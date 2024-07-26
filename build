@@ -1,0 +1,145 @@
+#!/bin/bash
+
+# Function to show usage information
+usage() {
+    echo "Usage: $0 [-v version]"
+    exit 1
+}
+
+# Function to log messages
+log() {
+    local msg="$1"
+    echo "$(date +'%Y-%m-%d %H:%M:%S') - $msg"
+}
+
+# Parse the optional parameter
+while getopts ":v:" opt; do
+  case ${opt} in
+    v )
+      version=$OPTARG
+      ;;
+    \? )
+      usage
+      ;;
+  esac
+done
+
+# If version is not provided, prompt the user for it
+if [ -z "$version" ]; then
+    read -p "Enter the version number: " version
+fi
+
+log "Starting script for version $version"
+
+# Create temp folder
+temp_dir=$(mktemp -d)
+if [ ! -d "$temp_dir" ]; then
+  log "Failed to create temporary directory"
+  exit 1
+fi
+log "Created temporary directory $temp_dir"
+
+# Define URLs and paths
+repo="phalcon/ide-stubs"
+zip_url="https://github.com/${repo}/archive/refs/tags/v${version}.zip"
+zip_file="${temp_dir}/v${version}.zip"
+meta_src_dir="meta"
+meta_dest_dir="${temp_dir}/META-INF"
+jar_file="phalconautocomplete-${version}.jar"
+dist_dir="$(pwd)/dist"
+
+# Create dist folder if it doesn't exist
+mkdir -p "$dist_dir"
+if [ $? -ne 0 ]; then
+  log "Failed to create dist directory"
+  exit 1
+fi
+
+# Download zip from GitHub into temp folder
+log "Downloading $zip_url"
+curl -L -o "$zip_file" -H "Accept: application/vnd.github.v3+json" -H "User-Agent: Mozilla/5.0" "$zip_url"
+if [ $? -ne 0 ]; then
+  log "Failed to download $zip_url"
+  exit 1
+fi
+
+# Verify download
+if [ ! -f "$zip_file" ]; then
+  log "Downloaded file not found"
+  exit 1
+fi
+log "Downloaded file saved to $zip_file"
+
+# Extract zip file and remove leading directory
+log "Extracting $zip_file"
+unzip "$zip_file" -d "$temp_dir"
+if [ $? -ne 0 ]; then
+  log "Failed to unzip $zip_file"
+  exit 1
+fi
+
+extracted_dir=$(find "$temp_dir" -mindepth 1 -maxdepth 1 -type d)
+if [ ! -d "$extracted_dir/src" ]; then
+  log "Source directory not found in $extracted_dir"
+  exit 1
+fi
+log "Extracted directory found at $extracted_dir"
+
+mkdir -p "${temp_dir}/src"
+mv "$extracted_dir/src"/* "${temp_dir}/src"
+if [ $? -ne 0 ]; then
+  log "Failed to move source files"
+  exit 1
+fi
+
+# Create META-INF directory
+mkdir -p "$meta_dest_dir"
+if [ $? -ne 0 ]; then
+  log "Failed to create META-INF directory"
+  exit 1
+fi
+
+# Copy all files from meta into the temp/META-INF folder
+cp -r "$meta_src_dir"/* "$meta_dest_dir"
+if [ $? -ne 0 ]; then
+  log "Failed to copy meta files"
+  exit 1
+fi
+
+# Replace {version} with the specified version in META-INF/plugin.xml
+sed -i '' "s/{version}/$version/g" "$meta_dest_dir/plugin.xml"
+if [ $? -ne 0 ]; then
+  log "Failed to replace version in plugin.xml"
+  exit 1
+fi
+
+# Navigate to the temp directory
+cd "$temp_dir"
+if [ $? -ne 0 ]; then
+  log "Failed to change directory to $temp_dir"
+  exit 1
+fi
+
+# Create a JAR file with the specified scheme, only including src directory files and META-INF
+zip -r "$jar_file" src META-INF
+if [ $? -ne 0 ]; then
+  log "Failed to create JAR file"
+  exit 1
+fi
+
+# Move the JAR file to the dist directory
+mv "$jar_file" "$dist_dir"
+if [ $? -ne 0 ]; then
+  log "Failed to move JAR file to dist directory"
+  exit 1
+fi
+
+# Clean up temporary files and directories
+cd ..
+rm -rf "$temp_dir"
+if [ $? -ne 0 ]; then
+  log "Failed to clean up temporary files"
+  exit 1
+fi
+
+log "JAR file created successfully: ${dist_dir}/${jar_file}"

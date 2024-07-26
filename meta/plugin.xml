@@ -1,0 +1,27 @@
+<idea-plugin version="2">
+  <id>cc.flawcra.phalconautocomplete</id>
+  <name>Phalcon {version} Autocomplete</name>
+  <version>{version}</version>
+  <vendor email="support@flawcra.cc">FlawCra</vendor>
+
+  <description><![CDATA[
+    Provides autocomplete functionality for Phalcon {version}.
+  ]]></description>
+
+  <change-notes><![CDATA[
+    <h3>{version}</h3>
+    <ul>
+      <li>IDE Stubs for Phalcon {version}</li>
+    </ul>
+  ]]>
+  </change-notes>
+
+  <idea-version since-build="213.6777"/>
+
+  <depends>com.intellij.modules.platform</depends>
+  <depends>com.jetbrains.php</depends>
+
+  <extensions defaultExtensionNs="com.jetbrains.php">
+    <libraryRoot id="library" path="/src/Phalcon" runtime="false"/>
+  </extensions>
+</idea-plugin>
