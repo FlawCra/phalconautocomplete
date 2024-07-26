@@ -29,7 +29,10 @@ if [ -z "$version" ]; then
     read -p "Enter the version number: " version
 fi
 
-log "Starting script for version $version"
+# Extract the major version from the full version string
+major_version=$(echo $version | cut -d '.' -f 1)
+
+log "Starting script for version $version, major version $major_version"
 
 # Create temp folder
 temp_dir=$(mktemp -d)
@@ -110,6 +113,13 @@ fi
 sed -i '' "s/{version}/$version/g" "$meta_dest_dir/plugin.xml"
 if [ $? -ne 0 ]; then
   log "Failed to replace version in plugin.xml"
+  exit 1
+fi
+
+# Replace {majorversion} with the extracted major version in META-INF/plugin.xml
+sed -i '' "s/{majorversion}/$major_version/g" "$meta_dest_dir/plugin.xml"
+if [ $? -ne 0 ]; then
+  log "Failed to replace major version in plugin.xml"
   exit 1
 fi
 

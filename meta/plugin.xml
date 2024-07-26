@@ -1,6 +1,6 @@
 <idea-plugin version="2">
-  <id>cc.flawcra.phalconautocomplete</id>
-  <name>Phalcon {version} Autocomplete</name>
+  <id>cc.flawcra.phalconautocomplete.{majorversion}</id>
+  <name>Phalcon {majorversion} Autocomplete</name>
   <version>{version}</version>
   <vendor email="support@flawcra.cc">FlawCra</vendor>
 
